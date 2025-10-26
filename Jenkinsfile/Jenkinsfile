@@ -1,0 +1,82 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKERHUB_USERNAME = credentials('dockerhub-username')
+        DOCKERHUB_PASSWORD = credentials('dockerhub-password')
+        IMAGE_NAME = 'your-dockerhub-username/flask-aws-monitor'
+        IMAGE_TAG = "latest"
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git branch: 'main', url: 'https://github.com/your-repo.git'
+            }
+        }
+
+        stage('Parallel Checks') {
+            parallel {
+                stage('Linting') {
+                    steps {
+                        script {
+                            // Python linting
+                            sh 'pip install flake8'
+                            sh 'flake8 .'
+
+                            // Shell scripts linting
+                            sh 'apt-get update && apt-get install -y shellcheck'
+                            sh 'find . -name "*.sh" | xargs shellcheck'
+
+                            // Dockerfile linting
+                            sh 'apt-get install -y hadolint'
+                            sh 'find . -name "Dockerfile" | xargs hadolint'
+                        }
+                    }
+                }
+
+                stage('Security Scanning') {
+                    steps {
+                        script {
+                            // Python security scanning
+                            sh 'pip install bandit'
+                            sh 'bandit -r .'
+
+                            // Docker image security scanning with Trivy
+                            sh 'apt-get install -y wget'
+                            sh 'wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.44.1_Linux-64bit.deb'
+                            sh 'dpkg -i trivy_0.44.1_Linux-64bit.deb || true'
+                            sh 'trivy image --exit-code 1 --severity HIGH,CRITICAL ${IMAGE_NAME}:${IMAGE_TAG} || true'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+                }
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                script {
+                    sh "echo ${DOCKERHUB_PASSWORD} | docker login -u ${DOCKERHUB_USERNAME} --password-stdin"
+                    sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed! Check logs for details.'
+        }
+    }
+}

@@ -1,0 +1,21 @@
+#This is a values yaml
+environment:
+  name: aws-monitoring
+  label : music
+
+service:
+  #name is always {environment.name}-suffix
+  type : ClusterIP
+  port: 80
+
+deployment:
+  #name is always {environment.name}-suffix
+  replicas: 3
+  container: 
+    name:  aws-monitoring-container
+    image: nofstr25/rolling
+    imageTag: latest
+    port: 5001
+
+ingress:
+  host: nof.localhost

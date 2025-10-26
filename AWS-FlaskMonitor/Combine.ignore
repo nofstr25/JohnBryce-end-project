@@ -1,0 +1,59 @@
+# #This is a service yaml
+# kind: Service     
+# apiVersion: v1     
+# metadata:
+#   name: {{ .Values.environment.name }}-service #from RELEASE NAME
+#   labels:
+#         {{- include "aws-monitor.labels" . | nindent 4}}
+# spec:
+#   selector:
+#     {{- include "aws-monitor.labels" . | nindent 4}}
+#   type: {{ .Values.service.type }}  #from values
+#   ports:         
+#   - name: http   
+#     protocol: TCP
+#     port: {{ .Values.service.port }}
+#     targetPort: {{ .Values.deployment.container.port }}
+# ---
+
+# #This is the deployment yaml
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: {{ .Values.environment.name }}-deployment #from RELEASE NAME
+#   labels:
+#     {{- include "aws-monitor.labels" . | nindent 4}}
+# spec:
+#   selector: 
+#     matchLabels:
+#       {{- include "aws-monitor.labels" . | nindent 6}}
+#   replicas: {{ .Values.deployment.replicas }}  #from values
+#   template:
+#     metadata:
+#       labels:
+#         {{- include "aws-monitor.labels" . | nindent 8}}
+#     spec:
+#       containers:
+#       - name: {{ .Values.deployment.container.name}} #from values
+#         image: {{ .Values.deployment.container.image }}:{{ .Values.deployment.container.imageTag }} #from values
+#         ports:
+#         - containerPort: {{ .Values.deployment.container.port }}
+
+# ---
+# #This is an ingress yaml
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: {{ .Values.environment.name }}-ingress
+# spec:
+#   rules:
+#     - http:
+#         paths:
+#           - path: /nof
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: {{ .Values.environment.name }}-service
+#                 port:
+#                   number: {{ .Values.service.port }}
+
