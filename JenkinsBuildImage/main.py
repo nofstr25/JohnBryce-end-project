@@ -9,17 +9,18 @@ AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 REGION = "us-east-1"
 
-print (AWS_ACCESS_KEY)
-print (AWS_SECRET_KEY)
+print(AWS_ACCESS_KEY)
+print(AWS_SECRET_KEY)
 
 # Initialize Boto3 clients
 session = boto3.Session(
-   aws_access_key_id=AWS_ACCESS_KEY,
-   aws_secret_access_key=AWS_SECRET_KEY,
-   region_name=REGION
+    aws_access_key_id=AWS_ACCESS_KEY,
+    aws_secret_access_key=AWS_SECRET_KEY,
+    region_name=REGION
 )
 ec2_client = session.client("ec2")
 elb_client = session.client("elbv2")
+
 
 @app.route("/")
 def home():
@@ -35,19 +36,21 @@ def home():
                 "Public IP": instance.get("PublicIpAddress", "N/A")
             })
 
-
     vpcs = ec2_client.describe_vpcs()
-    vpc_data = [{"VPC ID": vpc["VpcId"], "CIDR": vpc["CidrBlock"]} for vpc in vpcs.get("Vpcs", [])]
+    vpc_data = [{"VPC ID": vpc["VpcId"], "CIDR": vpc["CidrBlock"]}
+                for vpc in vpcs.get("Vpcs", [])]
 
     # Fetch Load Balancers
     lbs = elb_client.describe_load_balancers()
-    lb_data = [{"LB Name": lb["LoadBalancerName"], "DNS Name": lb["DNSName"]} for lb in lbs.get("LoadBalancers", [])]
+    lb_data = [{"LB Name": lb["LoadBalancerName"], "DNS Name": lb["DNSName"]}
+               for lb in lbs.get("LoadBalancers", [])]
 
     # Fetch AMIs (owned by the account)
     amis = ec2_client.describe_images(Owners=["self"])
-    ami_data = [{"AMI ID": ami["ImageId"], "Name": ami.get("Name", "N/A")} for ami in amis.get("Images", [])]
-  
-   # Render the result in a simple table
+    ami_data = [{"AMI ID": ami["ImageId"], "Name": ami.get(
+        "Name", "N/A")} for ami in amis.get("Images", [])]
+
+    # Render the result in a simple table
     html_template = """
     <html>
     <head><title>AWS Resources</title></head>
@@ -56,7 +59,12 @@ def home():
         <table border='1'>
             <tr><th>ID</th><th>State</th><th>Type</th><th>Public IP</th></tr>
             {% for instance in instance_data %}
-            <tr><td>{{ instance['ID'] }}</td><td>{{ instance['State'] }}</td><td>{{ instance['Type'] }}</td><td>{{ instance['Public IP'] }}</td></tr>
+            <tr>
+                <td>{{ instance['ID'] }}</td>
+                <td>{{ instance['State'] }}</td>
+                <td>{{ instance['Type'] }}</td>
+                <td>{{ instance['Public IP'] }}</td>
+            </tr>
             {% endfor %}
         </table>
         <h1>VPCs</h1>
@@ -84,12 +92,13 @@ def home():
     </html>
     """
 
-    return render_template_string(html_template, instance_data=instance_data, vpc_data=vpc_data, lb_data=lb_data, ami_data=ami_data)
+    return render_template_string(
+        html_template,
+        instance_data=instance_data,
+        vpc_data=vpc_data,
+        lb_data=lb_data,
+        ami_data=ami_data)
+
 
 if __name__ == "__main__":
-   app.run(host="0.0.0.0", port=5001, debug=True) # nosec
-
-
-
-
-
+    app.run(host="0.0.0.0", port=5001, debug=True)  # nosec
