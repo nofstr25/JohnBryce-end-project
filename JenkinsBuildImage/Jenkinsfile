@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('Dockerhub-Credentials')
+        DOCKERHUB_CREDENTIALS = credentials('DockerHub-Credentials')
         IMAGE_NAME = 'nofstr25/flask-aws-monitor'
         IMAGE_TAG = "latest"
     }
