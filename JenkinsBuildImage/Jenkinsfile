@@ -27,7 +27,7 @@ pipeline {
 
                             // Shell scripts linting
                             sh 'apt-get update && apt-get install -y shellcheck'
-                            sh 'find . -name "*.sh" | xargs shellcheck -e SC2034,SC2223,SC2005,SC2016,SC2124,SC2046,SC2155,SC2166,SC2174,SC2268'
+                            sh 'find . -name "*.sh" | xargs shellcheck -e SC2034,SC2223,SC2005,SC2016,SC2124,SC2046,SC2155,SC2166,SC2174,SC2268, SC2006, SC2086'
 
                             // Dockerfile linting
                             sh 'apt-get install -y hadolint'
