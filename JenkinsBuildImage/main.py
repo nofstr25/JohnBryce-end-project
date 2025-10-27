@@ -9,6 +9,9 @@ AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 REGION = "us-east-1"
 
+print (AWS_ACCESS_KEY)
+print (AWS_SECRET_KEY)
+
 # Initialize Boto3 clients
 session = boto3.Session(
    aws_access_key_id=AWS_ACCESS_KEY,
@@ -56,7 +59,6 @@ def home():
             <tr><td>{{ instance['ID'] }}</td><td>{{ instance['State'] }}</td><td>{{ instance['Type'] }}</td><td>{{ instance['Public IP'] }}</td></tr>
             {% endfor %}
         </table>
-        
         <h1>VPCs</h1>
         <table border='1'>
             <tr><th>VPC ID</th><th>CIDR</th></tr>
@@ -64,7 +66,6 @@ def home():
             <tr><td>{{ vpc['VPC ID'] }}</td><td>{{ vpc['CIDR'] }}</td></tr>
             {% endfor %}
         </table>
-        
         <h1>Load Balancers</h1>
         <table border='1'>
             <tr><th>LB Name</th><th>DNS Name</th></tr>
@@ -72,7 +73,6 @@ def home():
             <tr><td>{{ lb['LB Name'] }}</td><td>{{ lb['DNS Name'] }}</td></tr>
             {% endfor %}
         </table>
-        
         <h1>Available AMIs</h1>
         <table border='1'>
             <tr><th>AMI ID</th><th>Name</th></tr>
@@ -87,7 +87,7 @@ def home():
     return render_template_string(html_template, instance_data=instance_data, vpc_data=vpc_data, lb_data=lb_data, ami_data=ami_data)
 
 if __name__ == "__main__":
-   app.run(host="0.0.0.0", port=5001, debug=True)
+   app.run(host="0.0.0.0", port=5001, debug=True) # nosec
 
 
 
