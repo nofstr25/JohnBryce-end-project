@@ -30,7 +30,8 @@ pipeline {
                             sh 'find . -name "*.sh" | xargs shellcheck -e SC2034,SC2223,SC2005,SC2016,SC2124,SC2046,SC2155,SC2166,SC2174,SC2268,SC2006,SC2086'
 
                             // Dockerfile linting
-                            sh 'apt-get install -y hadolint'
+                            sh 'wget -O /usr/local/bin/hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64'
+                            sh 'chmod +x /usr/local/bin/hadolint'
                             sh 'find . -name "Dockerfile" | xargs hadolint'
                         }
                     }
