@@ -13,6 +13,23 @@ pipeline {
                 git branch: 'main', url: 'https://github.com/nofstr25/JohnBryce-end-project.git'
             }
         }
+        stage('Install isntall dependencies') {
+                    steps {
+                        script {
+                            sh 'apt-get update && apt-get install -y shellcheck' //shell script linter
+                            sh 'apt-get install -y wget' //for downloading hadolint and trivy
+                            sh 'pip install flake8' //python linter
+                            sh 'pip install autopep8' //python code formatter
+                            sh 'pip install bandit' //python security linter
+                            sh 'wget -O /usr/local/bin/hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64' //dockerfile linter
+                            sh 'chmod +x /usr/local/bin/hadolint' //makes hadolint (dockerfile linter) executable
+
+                            // For security scanning
+                            sh 'pip install bandit' //python security linter
+                            sh 'wget -qO /tmp/trivy.deb https://github.com/aquasecurity/trivy/releases/download/v0.67.2/trivy_0.67.2_Linux-64bit.deb' //docker image security scanner
+                            sh 'dpkg -i /tmp/trivy.deb' //install trivy
+                        }
+                    }   
 
         stage('Parallel Checks') {
             parallel {
@@ -20,18 +37,11 @@ pipeline {
                     steps {
                         script {
                             // Python linting
-                            sh 'pip install flake8'
-                            sh 'pip install autopep8'
                             sh 'autopep8 --in-place --aggressive --aggressive JenkinsBuildImage/main.py'
                             sh 'flake8 JenkinsBuildImage/main.py'
-
                             // Shell scripts linting
-                            sh 'apt-get update && apt-get install -y shellcheck'
                             sh 'find . -name "*.sh" | xargs shellcheck -e SC2034,SC2223,SC2005,SC2016,SC2124,SC2046,SC2155,SC2166,SC2174,SC2268,SC2006,SC2086'
-
                             // Dockerfile linting
-                            sh 'wget -O /usr/local/bin/hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64'
-                            sh 'chmod +x /usr/local/bin/hadolint'
                             sh 'find . -name "Dockerfile" -print0 | xargs -0 hadolint'
                         }
                     }
@@ -41,13 +51,8 @@ pipeline {
                     steps {
                         script {
                             // Python security scanning
-                            sh 'pip install bandit'
                             sh 'bandit -r .'
-
                             // Docker image security scanning with Trivy
-                            sh 'apt-get update && apt-get install -y wget'
-                            sh 'wget -qO /tmp/trivy.deb https://github.com/aquasecurity/trivy/releases/download/v0.67.2/trivy_0.67.2_Linux-64bit.deb'
-                            sh 'dpkg -i /tmp/trivy.deb'
                             sh 'trivy image --exit-code 1 --severity HIGH,CRITICAL ${IMAGE_NAME}:${IMAGE_TAG}'
                             // I removed the parsed || true to ensure the build fails on vulnerabilities
                          
