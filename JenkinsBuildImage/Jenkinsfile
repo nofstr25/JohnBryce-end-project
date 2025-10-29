@@ -37,25 +37,36 @@ pipeline {
                     }
                 }
 
-                stage('Security Scanning') {
-                    steps {
-                        script {
-                            // Python security scanning
-                            sh 'pip install bandit'
-                            sh 'bandit -r .'
+            stage('Security Scanning') {
+                steps {
+                    script {
+                        // Python security scanning
+                        sh 'pip install bandit'
+                        sh 'bandit -r .'
 
-                            // Docker image security scanning with Trivy
-                            sh 'apt-get update && apt-get install -y wget'
-                            sh 'wget -qO /tmp/trivy.deb https://github.com/aquasecurity/trivy/releases/download/v0.67.2/trivy_0.67.2_Linux-64bit.deb'
-                            sh 'dpkg -i /tmp/trivy.deb'
-                            sh 'trivy image --exit-code 1 --severity HIGH,CRITICAL ${IMAGE_NAME}:${IMAGE_TAG}'
-                            // I removed the parsed || true to ensure the build fails on vulnerabilities
-                         
-                        }
+                        // Docker image security scanning with Trivy, robust apt-get
+                        sh '''
+                        #!/bin/bash
+                        TIMEOUT=30
+                        COUNT=0
+                        while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
+                            echo "apt lock exists, waiting..."
+                            sleep 1
+                            COUNT=$((COUNT+1))
+                            if [ $COUNT -ge $TIMEOUT ]; then
+                                echo "Timeout waiting for apt lock. Exiting."
+                                exit 1
+                            fi
+                        done
+
+                        apt-get update && apt-get install -y wget
+                        '''
+                        sh 'wget -qO /tmp/trivy.deb https://github.com/aquasecurity/trivy/releases/download/v0.67.2/trivy_0.67.2_Linux-64bit.deb'
+                        sh 'dpkg -i /tmp/trivy.deb'
+                        sh 'trivy image --exit-code 1 --severity HIGH,CRITICAL ${IMAGE_NAME}:${IMAGE_TAG}'
                     }
                 }
             }
-        }
 
         stage('Build Docker Image') {
             steps {
