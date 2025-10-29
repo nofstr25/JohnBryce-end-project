@@ -47,8 +47,10 @@ pipeline {
                             // Docker image security scanning with Trivy
                             sh 'apt-get update && apt-get install -y wget'
                             sh 'wget -qO /tmp/trivy.deb https://github.com/aquasecurity/trivy/releases/download/v0.67.2/trivy_0.67.2_Linux-64bit.deb'
-                            sh 'dpkg -i /tmp/trivy.deb || true'
-                            sh 'trivy image --exit-code 1 --severity HIGH,CRITICAL ${IMAGE_NAME}:${IMAGE_TAG} || true'
+                            sh 'dpkg -i /tmp/trivy.deb'
+                            sh 'trivy image --exit-code 1 --severity HIGH,CRITICAL ${IMAGE_NAME}:${IMAGE_TAG}'
+                            // I removed the parsed || true to ensure the build fails on vulnerabilities
+                         
                         }
                     }
                 }
