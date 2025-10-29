@@ -37,8 +37,8 @@ pipeline {
                     }
                 }
 
-            stage('Security Scanning') {
-                steps {
+                stage('Security Scanning') {
+                 steps {
                     script {
                         // Python security scanning
                         sh 'pip install bandit'
@@ -67,6 +67,8 @@ pipeline {
                     }
                 }
             }
+            }
+        }
 
         stage('Build Docker Image') {
             steps {
@@ -85,6 +87,7 @@ pipeline {
             }
         }
     }
+        }
 
     post {
         success {
@@ -94,4 +97,3 @@ pipeline {
             echo 'Pipeline failed! Check logs for details.'
         }
     }
-}
