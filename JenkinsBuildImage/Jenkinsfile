@@ -14,61 +14,59 @@ pipeline {
             }
         }
 
-        stage('Parallel Checks') {
-            parallel {
-                stage('Linting') {
-                    steps {
-                        script {
-                            // Python linting
-                            sh 'pip install flake8'
-                            sh 'pip install autopep8'
-                            sh 'autopep8 --in-place --aggressive --aggressive JenkinsBuildImage/main.py'
-                            sh 'flake8 JenkinsBuildImage/main.py'
+stage('Parallel Checks') {
+    parallel {
+        stage('Linting') {
+            steps {
+                script {
+                    // Python linting
+                    sh 'pip install flake8 autopep8'
+                    sh 'autopep8 --in-place --aggressive --aggressive JenkinsBuildImage/main.py'
+                    sh 'flake8 JenkinsBuildImage/main.py'
 
-                            // Shell scripts linting
-                            sh 'apt-get update && apt-get install -y shellcheck'
-                            sh 'find . -name "*.sh" | xargs shellcheck -e SC2034,SC2223,SC2005,SC2016,SC2124,SC2046,SC2155,SC2166,SC2174,SC2268,SC2006,SC2086'
-
-                            // Dockerfile linting
-                            sh 'wget -O /usr/local/bin/hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64'
-                            sh 'chmod +x /usr/local/bin/hadolint'
-                            sh 'find . -name "Dockerfile" -print0 | xargs -0 hadolint'
-                        }
-                    }
-                }
-
-                stage('Security Scanning') {
-                 steps {
-                    script {
-                        // Python security scanning
-                        sh 'pip install bandit'
-                        sh 'bandit -r .'
-
-                        // Docker image security scanning with Trivy, robust apt-get
+                    // Shell scripts linting
+                    lock(resource: 'apt-lock') {
                         sh '''
-                        #!/bin/bash
-                        TIMEOUT=30
-                        COUNT=0
-                        while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
-                            echo "apt lock exists, waiting..."
-                            sleep 1
-                            COUNT=$((COUNT+1))
-                            if [ $COUNT -ge $TIMEOUT ]; then
-                                echo "Timeout waiting for apt lock. Exiting."
-                                exit 1
-                            fi
-                        done
-
-                        apt-get update && apt-get install -y wget
+                            apt-get update
+                            apt-get install -y shellcheck
                         '''
-                        sh 'wget -qO /tmp/trivy.deb https://github.com/aquasecurity/trivy/releases/download/v0.67.2/trivy_0.67.2_Linux-64bit.deb'
-                        sh 'dpkg -i /tmp/trivy.deb'
-                        sh 'trivy image --exit-code 1 --severity HIGH,CRITICAL ${IMAGE_NAME}:${IMAGE_TAG}'
                     }
+                    sh 'find . -name "*.sh" | xargs shellcheck -e SC2034,SC2223,SC2005,SC2016,SC2124,SC2046,SC2155,SC2166,SC2174,SC2268,SC2006,SC2086'
+
+                    // Dockerfile linting
+                    sh '''
+                        wget -O /usr/local/bin/hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
+                        chmod +x /usr/local/bin/hadolint
+                        find . -name "Dockerfile" -print0 | xargs -0 hadolint
+                    '''
                 }
-            }
             }
         }
+
+        stage('Security Scanning') {
+            steps {
+                script {
+                    sh 'pip install bandit'
+                    sh 'bandit -r .'
+
+                    // Docker image security scanning with Trivy
+                    lock(resource: 'apt-lock') {
+                        sh '''
+                            apt-get update
+                            apt-get install -y wget
+                        '''
+                    }
+                    sh '''
+                        wget -qO /tmp/trivy.deb https://github.com/aquasecurity/trivy/releases/download/v0.67.2/trivy_0.67.2_Linux-64bit.deb
+                        dpkg -i /tmp/trivy.deb
+                        trivy image --exit-code 1 --severity HIGH,CRITICAL ${IMAGE_NAME}:${IMAGE_TAG}
+                    '''
+                }
+            }
+        }
+    }
+}
+
 
         stage('Build Docker Image') {
             steps {
