@@ -2,7 +2,7 @@
 FROM python:3.11-slim AS image1
 WORKDIR /app
 
-COPY requirements.txt .
+COPY JenkinsBuildImage/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt 
 
 COPY . .
